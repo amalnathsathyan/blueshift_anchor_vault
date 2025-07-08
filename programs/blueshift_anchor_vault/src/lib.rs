@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_lang::system_program::{transfer, Transfer};
 
-declare_id!("Dhmc6b1boQ6WSgnNojLRnLSu8atQnV3RsJWP1B1E733E");
+declare_id!("DjTRUC6QKn32u8FDpL7mgsneX4b1fNwkoLj2dYK8E95g");
 
 #[program]
 pub mod blueshift_anchor_vault {
@@ -13,6 +13,7 @@ pub mod blueshift_anchor_vault {
             Rent::get()?.minimum_balance(0),
             VaultError::InvalidAmount
         );
+
         transfer(
             CpiContext::new(
                 ctx.accounts.system_program.to_account_info(),

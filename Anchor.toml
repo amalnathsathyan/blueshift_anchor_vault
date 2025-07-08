@@ -5,14 +5,14 @@ package_manager = "yarn"
 resolution = true
 skip-lint = false
 
-[programs.localnet]
-blueshift_anchor_vault = "Dhmc6b1boQ6WSgnNojLRnLSu8atQnV3RsJWP1B1E733E"
+[programs.devnet]
+blueshift_anchor_vault = "DjTRUC6QKn32u8FDpL7mgsneX4b1fNwkoLj2dYK8E95g"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "localnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
