@@ -1,13 +1,13 @@
 use anchor_lang::prelude::*;
 use anchor_lang::system_program::{transfer, Transfer};
 
-declare_id!("DjTRUC6QKn32u8FDpL7mgsneX4b1fNwkoLj2dYK8E95g");
+declare_id!("22222222222222222222222222222222222222222222");
 
 #[program]
 pub mod blueshift_anchor_vault {
     use super::*;
 
-    pub fn deposit(ctx: Context<VaultDeposit>, amount: u64) -> Result<()> {
+    pub fn deposit(ctx: Context<VaultAction>, amount: u64) -> Result<()> {
         require_gt!(
             amount,
             Rent::get()?.minimum_balance(0),
@@ -27,53 +27,46 @@ pub mod blueshift_anchor_vault {
         Ok(())
     }
 
-    pub fn withdraw(ctx: Context<VaultWithdraw>) -> Result<()> {
-        require_neq!(
-            ctx.accounts.vault.get_lamports(),
+    pub fn withdraw(ctx: Context<VaultAction>) -> Result<()> {
+        let vault_lamports = ctx.accounts.vault.lamports();
+
+        require_gt!(
+            vault_lamports,
             0,
             VaultError::InvalidAmount
         );
-        
+
+        // Prepare PDA signer seeds for CPI
+        let signer_key = ctx.accounts.signer.key();
+        let signer_seeds = &[b"vault", signer_key.as_ref(), &[ctx.bumps.vault]];
+
+        transfer(
+            CpiContext::new_with_signer(
+                ctx.accounts.system_program.to_account_info(),
+                Transfer {
+                    from: ctx.accounts.vault.to_account_info(),
+                    to: ctx.accounts.signer.to_account_info(),
+                },
+                &[&signer_seeds[..]]
+            ),
+            vault_lamports,
+        )?;
         Ok(())
     }
 }
 
 #[derive(Accounts)]
-pub struct VaultDeposit<'info> {
-    #[account(mut)]
-    pub signer: Signer<'info>,
-    #[account(
-        init,
-        seeds = [b"anchor_vault", signer.key().as_ref(), extra_seed.key().as_ref()],
-        bump,
-        payer = signer,
-        space = 8,
-    )]
-    pub vault: Account<'info, Vault>,
-    /// CHECK: This can be any pubkey or bytes passed as seed
-    pub extra_seed: UncheckedAccount<'info>,
-    pub system_program: Program<'info, System>,
-}
-
-#[derive(Accounts)]
-pub struct VaultWithdraw<'info> {
+pub struct VaultAction<'info> {
     #[account(mut)]
     pub signer: Signer<'info>,
     #[account(
         mut,
-        seeds = [b"anchor_vault", signer.key().as_ref(), extra_seed.key().as_ref()],
+        seeds = [b"vault", signer.key().as_ref()],
         bump,
-        close = signer // <-- This closes the account after withdraw
     )]
-    pub vault: Account<'info, Vault>,
-    /// CHECK: This can be any pubkey or bytes passed as seed
-    pub extra_seed: UncheckedAccount<'info>,
+    pub vault: SystemAccount<'info>,
     pub system_program: Program<'info, System>,
 }
-
-#[account]
-pub struct Vault {}
-
 
 #[error_code]
 pub enum VaultError {
